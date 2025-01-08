@@ -9,6 +9,7 @@ from itertools import cycle
 
 TIC_TIMEOUT = 0.1
 STARS = '+*.:'
+MARGINS_FROM_FRAME = 2
 
 
 async def animate_spaceship(canvas, frames, start_row, start_column):
@@ -23,19 +24,12 @@ async def animate_spaceship(canvas, frames, start_row, start_column):
         frame_rows, frame_columns = get_frame_size(item)
         max_row, max_column = curses.window.getmaxyx(canvas)
 
-        if row + frame_rows > max_row:
-            row = max_row - frame_rows + delta_row
-        if column + frame_columns > max_column:
-            column = max_column - frame_columns + delta_col
-        if row < delta_row:
-            row = delta_row
-        if column < delta_col:
-            column = delta_col
+        row = min(max(row, delta_row), max_row - frame_rows + delta_row)
+        column = min(max(column, delta_col), max_column - frame_columns + delta_col)
 
         row += delta_row
         column += delta_col
         draw_frame(canvas, row, column, item)
-        canvas.refresh()
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, item, negative=True)
 
@@ -70,11 +64,11 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def blink(canvas, row, column, symbol='*'):
+async def blink(canvas, row, column, offset_tics, symbol='*'):
     """Display stars with blinks."""
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(random.randint(20, 50)):
+        for _ in range(offset_tics):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
@@ -93,20 +87,22 @@ async def blink(canvas, row, column, symbol='*'):
 def draw(canvas):
     """Game engine"""
     curses.curs_set(False)
+    canvas.border()
 
     max_row, max_column = curses.window.getmaxyx(canvas)
 
     first_frame = get_frame('frames/rocket_frame_1.txt')
     second_frame = get_frame('frames/rocket_frame_2.txt')
-    frames = [first_frame, second_frame]
+    frames = [first_frame, first_frame, second_frame, second_frame]
 
-    coroutines = [fire(canvas, max_row // 2, max_column //2)]
+    coroutines = [fire(canvas, max_row // 2, max_column // 2)]
 
     for _ in range(random.randint(1, (max_row * max_column)) // 4):
         coroutines.append(
             blink(canvas,
-                  random.randint(1, max_row - 2),
-                  random.randint(1, max_column - 2),
+                  random.randint(1, max_row - MARGINS_FROM_FRAME),
+                  random.randint(1, max_column - MARGINS_FROM_FRAME),
+                  random.randint(20, 50),
                   random.choice(STARS)
                   )
         )
@@ -114,7 +110,6 @@ def draw(canvas):
     coroutines.append(animate_spaceship(canvas, frames, max_row // 2, max_column // 2))
 
     while True:
-        canvas.border()
         for coroutine in coroutines.copy():
             try:
                 coroutine.send(None)
