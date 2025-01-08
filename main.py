@@ -2,10 +2,8 @@ import asyncio
 import curses
 import time
 import random
-
-
 from file_manager import get_frame
-from curses_tools import draw_frame, read_controls
+from curses_tools import draw_frame, read_controls, get_frame_size
 from itertools import cycle
 
 
@@ -21,6 +19,19 @@ async def animate_spaceship(canvas, frames, start_row, start_column):
 
     for item in cycle(frames):
         delta_row, delta_col, _ = read_controls(canvas)
+
+        frame_rows, frame_columns = get_frame_size(item)
+        max_row, max_column = curses.window.getmaxyx(canvas)
+
+        if row + frame_rows > max_row:
+            row = max_row - frame_rows + delta_row
+        if column + frame_columns > max_column:
+            column = max_column - frame_columns + delta_col
+        if row < delta_row:
+            row = delta_row
+        if column < delta_col:
+            column = delta_col
+
         row += delta_row
         column += delta_col
         draw_frame(canvas, row, column, item)
@@ -81,7 +92,6 @@ async def blink(canvas, row, column, symbol='*'):
 
 def draw(canvas):
     """Game engine"""
-
     curses.curs_set(False)
 
     max_row, max_column = curses.window.getmaxyx(canvas)
@@ -104,6 +114,7 @@ def draw(canvas):
     coroutines.append(animate_spaceship(canvas, frames, max_row // 2, max_column // 2))
 
     while True:
+        canvas.border()
         for coroutine in coroutines.copy():
             try:
                 coroutine.send(None)
