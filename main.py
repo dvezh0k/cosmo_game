@@ -5,11 +5,21 @@ import random
 from file_manager import get_frame
 from curses_tools import draw_frame, read_controls, get_frame_size
 from itertools import cycle
+from space_garbage import fly_garbage
 
 
 TIC_TIMEOUT = 0.1
 STARS = '+*.:'
 MARGINS_FROM_FRAME = 2
+GARBAGE_FRAMES = [
+    'frames/garbage/duck.txt',
+    'frames/garbage/hubble.txt',
+    'frames/garbage/lamp.txt',
+    'frames/garbage/trash_large.txt',
+    'frames/garbage/trash_small.txt',
+    'frames/garbage/trash_xl.txt'
+]
+GARBAGE_ON_SCREEN = 10
 
 
 async def animate_spaceship(canvas, frames, start_row, start_column):
@@ -87,27 +97,37 @@ async def blink(canvas, row, column, offset_tics, symbol='*'):
 def draw(canvas):
     """Game engine"""
     curses.curs_set(False)
-    canvas.border()
+    # canvas.border()
 
     max_row, max_column = curses.window.getmaxyx(canvas)
 
-    first_frame = get_frame('frames/rocket_frame_1.txt')
-    second_frame = get_frame('frames/rocket_frame_2.txt')
-    frames = [first_frame, first_frame, second_frame, second_frame]
-
     coroutines = [fire(canvas, max_row // 2, max_column // 2)]
 
-    for _ in range(random.randint(1, (max_row * max_column)) // 4):
+    for _ in range(random.randrange((max_row * max_column)) // 4):
         coroutines.append(
             blink(canvas,
-                  random.randint(1, max_row - MARGINS_FROM_FRAME),
-                  random.randint(1, max_column - MARGINS_FROM_FRAME),
+                  random.randint(MARGINS_FROM_FRAME, max_row - MARGINS_FROM_FRAME),
+                  random.randint(MARGINS_FROM_FRAME, max_column - MARGINS_FROM_FRAME),
                   random.randint(20, 50),
                   random.choice(STARS)
                   )
         )
 
-    coroutines.append(animate_spaceship(canvas, frames, max_row // 2, max_column // 2))
+    garbage_frames = [get_frame(frame) for frame in GARBAGE_FRAMES]
+
+    for _ in range(GARBAGE_ON_SCREEN):
+        coroutines.append(
+            fly_garbage(canvas,
+                        random.randint(MARGINS_FROM_FRAME, max_column - MARGINS_FROM_FRAME),
+                        random.choice(garbage_frames)
+                  )
+        )
+
+    first_frame = get_frame('frames/rocket_frame_1.txt')
+    second_frame = get_frame('frames/rocket_frame_2.txt')
+    spaceship_frames = [first_frame, first_frame, second_frame, second_frame]
+
+    coroutines.append(animate_spaceship(canvas, spaceship_frames, max_row // 2, max_column // 2))
 
     while True:
         for coroutine in coroutines.copy():
