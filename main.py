@@ -19,7 +19,29 @@ GARBAGE_FRAMES = [
     'frames/garbage/trash_small.txt',
     'frames/garbage/trash_xl.txt'
 ]
-GARBAGE_ON_SCREEN = 10
+MAX_GARBAGE_ON_SCREEN = 5
+coroutines = []
+
+
+async def sleep(tics=1):
+    for _ in range(tics):
+        await asyncio.sleep(0)
+
+
+async def fill_orbit_with_garbage(canvas, max_column):
+    garbage_frames = [get_frame(frame) for frame in GARBAGE_FRAMES]
+
+    while True:
+        for _ in range(random.randint(1, MAX_GARBAGE_ON_SCREEN)):
+            coroutines.append(
+                fly_garbage(canvas,
+                            random.randint(MARGINS_FROM_FRAME, max_column - MARGINS_FROM_FRAME),
+                            random.choice(garbage_frames)
+                      )
+            )
+        await sleep(random.randint(20, 40))
+
+
 
 
 async def animate_spaceship(canvas, frames, start_row, start_column):
@@ -78,20 +100,16 @@ async def blink(canvas, row, column, offset_tics, symbol='*'):
     """Display stars with blinks."""
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(offset_tics):
-            await asyncio.sleep(0)
+        await sleep(offset_tics)
 
         canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        await sleep(3)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for _ in range(5):
-            await asyncio.sleep(0)
+        await sleep(5)
 
         canvas.addstr(row, column, symbol)
-        for _ in range(3):
-            await asyncio.sleep(0)
+        await sleep(3)
 
 
 def draw(canvas):
@@ -101,9 +119,9 @@ def draw(canvas):
 
     max_row, max_column = curses.window.getmaxyx(canvas)
 
-    coroutines = [fire(canvas, max_row // 2, max_column // 2)]
+    #coroutines.append(fire(canvas, max_row // 2, max_column // 2))
 
-    for _ in range(random.randrange((max_row * max_column)) // 4):
+    for _ in range(random.randrange((max_row * max_column)) // 8):
         coroutines.append(
             blink(canvas,
                   random.randint(MARGINS_FROM_FRAME, max_row - MARGINS_FROM_FRAME),
@@ -113,15 +131,7 @@ def draw(canvas):
                   )
         )
 
-    garbage_frames = [get_frame(frame) for frame in GARBAGE_FRAMES]
-
-    for _ in range(GARBAGE_ON_SCREEN):
-        coroutines.append(
-            fly_garbage(canvas,
-                        random.randint(MARGINS_FROM_FRAME, max_column - MARGINS_FROM_FRAME),
-                        random.choice(garbage_frames)
-                  )
-        )
+    coroutines.append(fill_orbit_with_garbage(canvas, max_column))
 
     first_frame = get_frame('frames/rocket_frame_1.txt')
     second_frame = get_frame('frames/rocket_frame_2.txt')
