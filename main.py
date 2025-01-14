@@ -42,8 +42,6 @@ async def fill_orbit_with_garbage(canvas, max_column):
         await sleep(random.randint(20, 40))
 
 
-
-
 async def animate_spaceship(canvas, frames, start_row, start_column):
     """Display animation of spaceship with flight control capability."""
 
