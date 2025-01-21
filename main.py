@@ -6,6 +6,7 @@ from file_manager import get_frame
 from curses_tools import draw_frame, read_controls, get_frame_size
 from itertools import cycle
 from space_garbage import fly_garbage
+from physics import update_speed
 
 
 TIC_TIMEOUT = 0.1
@@ -47,19 +48,27 @@ async def animate_spaceship(canvas, frames, start_row, start_column):
 
     canvas.nodelay(True)
     row, column = start_row, start_column
+    row_speed = column_speed = 0
 
     for item in cycle(frames):
-        delta_row, delta_col, _ = read_controls(canvas)
-
         frame_rows, frame_columns = get_frame_size(item)
         max_row, max_column = curses.window.getmaxyx(canvas)
 
+        delta_row, delta_col, shooting = read_controls(canvas)
+
+        # Ограничение на вылет за границы поля
         row = min(max(row, delta_row), max_row - frame_rows + delta_row)
         column = min(max(column, delta_col), max_column - frame_columns + delta_col)
 
-        row += delta_row
-        column += delta_col
+        row_speed, column_speed = update_speed(row_speed, column_speed, delta_row, delta_col)
+
+        row += row_speed
+        column += column_speed
         draw_frame(canvas, row, column, item)
+
+        if shooting:
+            coroutines.append(fire(canvas, row, column + frame_columns // 2))
+
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, item, negative=True)
 
