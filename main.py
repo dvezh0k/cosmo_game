@@ -2,11 +2,12 @@ import asyncio
 import curses
 import time
 import random
-from file_manager import get_frame
-from curses_tools import draw_frame, read_controls, get_frame_size
+from tools.file_manager import get_frame
+from tools.curses_tools import draw_frame, read_controls, get_frame_size
 from itertools import cycle
-from space_garbage import fly_garbage
-from physics import update_speed
+from models.space_garbage import fly_garbage
+from tools.physics import update_speed
+from variables import obstacles, coroutines
 
 
 TIC_TIMEOUT = 0.1
@@ -21,7 +22,6 @@ GARBAGE_FRAMES = [
     'frames/garbage/trash_xl.txt'
 ]
 MAX_GARBAGE_ON_SCREEN = 5
-coroutines = []
 
 
 async def sleep(tics=1):
@@ -96,6 +96,9 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
     curses.beep()
 
     while 0 < row < max_row and 0 < column < max_column:
+        for obstacle in obstacles:
+            if obstacle.has_collision(row, column):
+                return
         canvas.addstr(round(row), round(column), symbol)
         await asyncio.sleep(0)
         canvas.addstr(round(row), round(column), ' ')
