@@ -2,6 +2,8 @@ import asyncio
 import curses
 import time
 import random
+from curses import start_color
+
 from tools.file_manager import get_frame
 from tools.curses_tools import draw_frame, read_controls, get_frame_size
 from itertools import cycle
@@ -23,6 +25,19 @@ GARBAGE_FRAMES = [
     'frames/garbage/trash_xl.txt'
 ]
 MAX_GARBAGE_ON_SCREEN = 5
+
+
+async def show_gameover(canvas):
+    frame = get_frame('frames/game_over.txt')
+    max_row, max_column = curses.window.getmaxyx(canvas)
+    frame_rows, frame_columns = get_frame_size(frame)
+    row = max_row // 2 - frame_rows // 2
+    column = max_column // 2 - frame_columns // 2
+
+    while True:
+        draw_frame(canvas, row, column, frame)
+        await asyncio.sleep(0)
+        draw_frame(canvas, row, column, frame, negative=True)
 
 
 async def sleep(tics=1):
@@ -69,6 +84,12 @@ async def animate_spaceship(canvas, frames, start_row, start_column):
 
         if shooting:
             coroutines.append(fire(canvas, row, column + frame_columns // 2))
+
+        for obstacle in obstacles:
+            if obstacle.has_collision(row, column):
+                draw_frame(canvas, row, column, item, negative=True)
+                await show_gameover(canvas)
+                return
 
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, item, negative=True)
