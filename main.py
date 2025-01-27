@@ -8,6 +8,7 @@ from itertools import cycle
 from models.space_garbage import fly_garbage
 from tools.physics import update_speed
 from variables import obstacles, coroutines, obstacles_in_last_collisions
+from models.explosion import explode
 
 
 TIC_TIMEOUT = 0.1
@@ -100,6 +101,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         for obstacle in obstacles:
             if obstacle.has_collision(row, column):
                 obstacles_in_last_collisions.append(obstacle)
+                await explode(canvas, row, column)
                 return
 
         canvas.addstr(round(row), round(column), symbol)
