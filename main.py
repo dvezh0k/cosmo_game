@@ -2,8 +2,6 @@ import asyncio
 import curses
 import time
 import random
-from curses import start_color
-
 from tools.file_manager import get_frame
 from tools.curses_tools import draw_frame, read_controls, get_frame_size
 from itertools import cycle
@@ -13,6 +11,7 @@ from variables import obstacles, coroutines, obstacles_in_last_collisions
 from models.explosion import explode
 
 
+year = 1957
 TIC_TIMEOUT = 0.1
 STARS = '+*.:'
 MARGINS_FROM_FRAME = 2
@@ -25,6 +24,30 @@ GARBAGE_FRAMES = [
     'frames/garbage/trash_xl.txt'
 ]
 MAX_GARBAGE_ON_SCREEN = 5
+TICS_PER_YEAR = 15
+
+
+async def change_year():
+    global year
+
+    while True:
+        await sleep(TICS_PER_YEAR)
+        year += 1
+
+
+async def show_year(canvas):
+    """Display years counter"""
+    max_row, max_column = curses.window.getmaxyx(canvas)
+    row = max_row - MARGINS_FROM_FRAME
+    column = max_column - max_column // 8
+    canvas.derwin(row, column)
+
+    global year
+
+    while True:
+        text = f'Year: {year}'
+        canvas.addstr(row, column, text, curses.A_BOLD)
+        await asyncio.sleep(0)
 
 
 async def show_gameover(canvas):
@@ -155,8 +178,6 @@ def draw(canvas):
 
     max_row, max_column = curses.window.getmaxyx(canvas)
 
-    #coroutines.append(fire(canvas, max_row // 2, max_column // 2))
-
     for _ in range(random.randrange((max_row * max_column)) // 8):
         coroutines.append(
             blink(canvas,
@@ -174,6 +195,8 @@ def draw(canvas):
     spaceship_frames = [first_frame, first_frame, second_frame, second_frame]
 
     coroutines.append(animate_spaceship(canvas, spaceship_frames, max_row // 2, max_column // 2))
+
+    coroutines.append(show_year(canvas))
 
     while True:
         for coroutine in coroutines.copy():
