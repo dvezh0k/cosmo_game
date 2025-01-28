@@ -47,7 +47,7 @@ async def show_year(canvas):
     while True:
         text = f'Year: {year}'
         canvas.addstr(row, column, text, curses.A_BOLD)
-        await asyncio.sleep(0)
+        await change_year()
 
 
 async def show_gameover(canvas):
