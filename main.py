@@ -9,6 +9,7 @@ from models.space_garbage import fly_garbage
 from tools.physics import update_speed
 from variables import obstacles, coroutines, obstacles_in_last_collisions
 from models.explosion import explode
+from game_scenario import get_garbage_delay_tics,PHRASES
 
 
 year = 1957
@@ -25,32 +26,38 @@ GARBAGE_FRAMES = [
 ]
 MAX_GARBAGE_ON_SCREEN = 5
 TICS_PER_YEAR = 15
+GARBAGE_APPEARANCE_YEAR = 1961
+LASER_GUN_APPEARANCE_YEAR = 2020
 
 
 async def change_year():
+    """Display game duration"""
     global year
-
-    while True:
-        await sleep(TICS_PER_YEAR)
-        year += 1
+    await sleep(TICS_PER_YEAR)
+    year += 1
 
 
 async def show_year(canvas):
-    """Display years counter"""
+    """Display years counter and text description of the year"""
     max_row, max_column = curses.window.getmaxyx(canvas)
     row = max_row - MARGINS_FROM_FRAME
     column = max_column - max_column // 8
-    canvas.derwin(row, column)
 
     global year
 
     while True:
+
+        if year in PHRASES:
+            canvas.derwin(row, max_column // 2)
+            canvas.addstr(row, max_column // 2, PHRASES[year], curses.A_REVERSE)
+
         text = f'Year: {year}'
         canvas.addstr(row, column, text, curses.A_BOLD)
         await change_year()
 
 
 async def show_gameover(canvas):
+    """Display game over frame"""
     frame = get_frame('frames/game_over.txt')
     max_row, max_column = curses.window.getmaxyx(canvas)
     frame_rows, frame_columns = get_frame_size(frame)
@@ -64,12 +71,18 @@ async def show_gameover(canvas):
 
 
 async def sleep(tics=1):
+    """Make a pause during number of tics"""
     for _ in range(tics):
         await asyncio.sleep(0)
 
 
 async def fill_orbit_with_garbage(canvas, max_column):
+    """Continuously fill the orbit with garbage"""
     garbage_frames = [get_frame(frame) for frame in GARBAGE_FRAMES]
+
+    global year
+    while year < GARBAGE_APPEARANCE_YEAR:
+        await asyncio.sleep(0)
 
     while True:
         for _ in range(random.randint(1, MAX_GARBAGE_ON_SCREEN)):
@@ -79,7 +92,7 @@ async def fill_orbit_with_garbage(canvas, max_column):
                             random.choice(garbage_frames)
                       )
             )
-        await sleep(random.randint(20, 40))
+        await sleep(get_garbage_delay_tics(year))
 
 
 async def animate_spaceship(canvas, frames, start_row, start_column):
@@ -120,6 +133,9 @@ async def animate_spaceship(canvas, frames, start_row, start_column):
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
     """Display animation of gun shot, direction and speed can be specified."""
+
+    while year < LASER_GUN_APPEARANCE_YEAR:
+        await asyncio.sleep(0)
 
     row, column = start_row, start_column
 
