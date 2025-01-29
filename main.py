@@ -48,7 +48,6 @@ async def show_year(canvas):
     while True:
 
         if year in PHRASES:
-            canvas.derwin(row, max_column // 2)
             canvas.addstr(row, max_column // 2, PHRASES[year], curses.A_REVERSE)
 
         text = f'Year: {year}'
